@@ -4,13 +4,32 @@ import './App.css';
 import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend} from 'recharts';
 
 
+//Spinner
+const Loading = (props) => {
+  return (
+    <div className="text-center">
+      <div className="spinner-border">
+        <span className = "sr-only"></span>
+      </div>
+    </div>
+  )
+}
+
 // Header
 const Header = (props) => {
   return (
     <div className="container header">
       <div className="row">
-        <div className="col-md-12 text-center">
+        <div className="col-md-4"></div>
+        <div className="col-md-4 text-center">
           <h1>MLMSimulator</h1>
+          <hr></hr>
+        </div>
+        <div className="col-md-4"></div>
+      </div>
+      <div className="row">
+        <div className="col-md-12 text-center">
+          <h5>To run simulation and see results, please press 'Run Simulation' button.</h5>
         </div>
       </div>
     </div>  
@@ -24,7 +43,7 @@ const ApiButtons = (props) => {
       <div className="row">
         <div className="col-md-12 text-center">
           <button className="btn btn-warning" style={{marginRight: "10px"}} onClick={props.onRunSimulation}> Run Simulation </button>
-          <button className="btn btn-warning" style={{marginLeft: "10px"}} onClick={props.onShowResults}> See Results </button>
+          {/* <button className="btn btn-warning" style={{marginLeft: "10px"}} onClick={props.onShowResults}> See Results </button> */}
         </div>
       </div>
     </div>  
@@ -37,6 +56,7 @@ const RePlot = ({data}) => {
       <div className="row">
         <div className="col-md-12 text-center">
           <div id="plot">
+            <h4>Monthly Earnings</h4>
             <LineChart width={500} height={300} data={data} margin={{top: 5, right: 30, left: 20, bottom: 5,}}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="month" />
@@ -56,7 +76,7 @@ const RePlot = ({data}) => {
 
 
 function createLines(data){
-  const colors = ["#82ca9d", "#8884d8", "#8893d0"];
+  const colors = ["#82ca9d", "#8884d8", "#8893d0", "#9a1f40", "#74d4c0", "#ffd31d", "#f57b51", "#9a1f40", "#ffd31d", "#ff5200", "#649d66"];
 
   let lines = [];
 
@@ -88,11 +108,16 @@ function showResults(){
 function App() {
   const [data, updateData] = useState({});
   const [showPlot, updateShowPlot] = useState(false);
+  const [loading, updateLoading] = useState(false);
 
 
   const handleOnRunSimulation = () => {
     console.log("Handling on run simulation");
-    runSimulation();  
+    updateLoading(true);
+    runSimulation().then(response => {
+      updateLoading(false);
+      handleOnShowResults();
+    });  
   }
 
   const handleOnShowResults = () => {
@@ -127,6 +152,7 @@ function App() {
     <div>
       <Header/>
       <ApiButtons onRunSimulation={handleOnRunSimulation} onShowResults={handleOnShowResults}/>
+      {loading && (<Loading/>)}
       {showPlot && (<RePlot data={data}/>)}
     </div>
   );

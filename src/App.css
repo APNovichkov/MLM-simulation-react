@@ -1,9 +1,13 @@
 .header{
-  padding-top: 100px;
+  padding-top: 50px;
 }
 
 #plot{
   display: inline-block;
+}
+
+.spinner-border{
+  margin-top: 50px;
 }
 
 
