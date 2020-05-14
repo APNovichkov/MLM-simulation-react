@@ -1,8 +1,8 @@
-import React from 'react';
+import React, {useState, useEffect} from 'react';
 import axios from 'axios';
-import Plot from 'react-plotly.js';
-
 import './App.css';
+import { LineChart, Line, CartesianGrid, XAxis, YAxis, Tooltip, Legend} from 'recharts';
+
 
 // Header
 const Header = (props) => {
@@ -18,121 +18,118 @@ const Header = (props) => {
 }
 
 // Test Button
-const TestButton = (props) => {
+const ApiButtons = (props) => {
   return (
     <div className="container header">
       <div className="row">
         <div className="col-md-12 text-center">
-          <button className="btn btn-warning" style="margin-right: 10px;" onClick={runSimulation}> Run Simulation </button>
-          <button className="btn btn-warning" style="margin-left: 10px;" onClick={showResults}> See Results </button>
+          <button className="btn btn-warning" style={{marginRight: "10px"}} onClick={props.onRunSimulation}> Run Simulation </button>
+          <button className="btn btn-warning" style={{marginLeft: "10px"}} onClick={props.onShowResults}> See Results </button>
         </div>
       </div>
     </div>  
   )
 }
 
-const TmpPlot = (props) => {
+const RePlot = ({data}) => {
   return (
     <div className="container header">
       <div className="row">
         <div className="col-md-12 text-center">
-          <div id="plot"></div>
+          <div id="plot">
+            <LineChart width={500} height={300} data={data} margin={{top: 5, right: 30, left: 20, bottom: 5,}}>
+              <CartesianGrid strokeDasharray="3 3" />
+              <XAxis dataKey="month" />
+              <YAxis />
+              <Tooltip />
+              <Legend />
+
+              { createLines(data) }
+
+            </LineChart>
+          </div>
         </div>
       </div>
     </div>  
   )
 }
+
+
+function createLines(data){
+  const colors = ["#82ca9d", "#8884d8", "#8893d0"];
+
+  let lines = [];
+
+  for(let i = 1; i < Object.keys(data[0]).length; i++){
+    lines.push(<Line type="monotone" dataKey={`node${i}`} stroke={colors[i]}/>);
+  }
+
+  return lines;
+}
+
 
 function runSimulation(){
   let request = 'http://localhost:8080/api/v1/mlm';
   console.log("API Request: " + request);
 
-  axios.post(request, {headers: {'Access-Control-Allow-Origin': '*', Accept: 'application/json', 'Content-Type': 'application/json'}})
-  .then(response => {
-    console.log("Finished running simulation");
-  }).catch(err => {
-    console.log(err);
-  })
+  return axios.post(request, {headers: {'Access-Control-Allow-Origin': '*', Accept: 'application/json', 'Content-Type': 'application/json'}})
+  
 }
 
 function showResults(){
   let request = "http://localhost:8080/api/v1/mlm/ibotimeline";
   console.log("API request: " + request);
 
-  axios.get(request, {headers: {'Access-Control-Allow-Origin': '*', Accept: 'application/json', 'Content-Type': 'application/json'}})
-  .then(response => {
-    console.log("Response months: " + response.data.months);
-    console.log("Response nodes: " + response.data.nodes);
-
-    var data = [];
-    for(var i = 0; i < response.data.nodes.length; i++){
-        data.push({
-            x: response.data.months,
-            y: response.data.nodes[i].values,
-            name: response.data.nodes[i].nodeId
-        });
-    }
-    
-    var layout = {
-          title: 'IBO Timeline Tracker: ' + response.data.nodes.length,
-          xaxis: {
-            title: 'Time(Months)',
-            titlefont: {
-              family: 'Courier New, monospace',
-              size: 18,
-              color: '#7f7f7f'
-            }
-          },
-          yaxis: {
-            title: 'Monthly Income($)',
-            titlefont: {
-              family: 'Courier New, monospace',
-              size: 18,
-              color: '#7f7f7f'
-            }
-          }
-        };
-    
-    Plot.newPlot(
-        'plot',
-        data,
-        layout
-    );
-
-  })
+  return axios.get(request, {headers: {'Access-Control-Allow-Origin': '*', Accept: 'application/json', 'Content-Type': 'application/json'}})
+  
 }
 
+
 function App() {
-
-  const header = React.createElement(Header);
-  const testButton = React.createElement(TestButton);
-  const plot = React.createElement(TmpPlot);
-
-  return React.createElement("div", {}, [
-    header,
-    testButton,
-    plot
-  ]);
+  const [data, updateData] = useState({});
+  const [showPlot, updateShowPlot] = useState(false);
 
 
-  // return (
-  //   <div className="App">
-  //     <header className="App-header">
-  //       <img src={logo} className="App-logo" alt="logo" />
-  //       <p>
-  //         Edit <code>src/App.js</code> and save to reload.
-  //       </p>
-  //       <a
-  //         className="App-link"
-  //         href="https://reactjs.org"
-  //         target="_blank"
-  //         rel="noopener noreferrer"
-  //       >
-  //         Learn React
-  //       </a>
-  //     </header>
-  //   </div>
-  // );
+  const handleOnRunSimulation = () => {
+    console.log("Handling on run simulation");
+    runSimulation();  
+  }
+
+  const handleOnShowResults = () => {
+    console.log("Handling on show results");
+    showResults().then(response => {
+      console.log(response.data)
+
+      let t_data = response.data.months.reduce((acc, month) => {
+        // console.log(`Month: ${month}`)
+        acc.push({
+          'month': month
+        })
+        return acc;
+      }, []).map((month, i) => {
+        // console.log(`Month: ${month.month}`)
+        response.data.nodes.map((node, j) => {
+          month[`node${j+1}`] = node.values[i];
+        })
+        return month;
+      });
+
+      // console.log(t_data);
+
+      updateData(t_data);
+      updateShowPlot(true);
+    }).catch(err => {
+      console.log(err);
+    })
+  }
+  
+  return (
+    <div>
+      <Header/>
+      <ApiButtons onRunSimulation={handleOnRunSimulation} onShowResults={handleOnShowResults}/>
+      {showPlot && (<RePlot data={data}/>)}
+    </div>
+  );
 }
 
 export default App;

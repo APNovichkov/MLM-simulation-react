@@ -2,7 +2,9 @@
   padding-top: 100px;
 }
 
-
+#plot{
+  display: inline-block;
+}
 
 
 .App {
